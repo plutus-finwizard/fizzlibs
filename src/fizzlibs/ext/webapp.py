@@ -29,7 +29,7 @@ class FlaskApplication(Flask):
         self._add_api_routes(routes)
         self._add_deferred_route()
 
-        self.__load_queue()
+        # self.__load_queue()
 
     def make_config(self, instance_relative=False):
         root_path = self.root_path

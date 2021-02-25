@@ -1,4 +1,6 @@
 import logging
+import json
+
 from fizzlibs.ext.handler import AuthHandler
 from fizzlibs.ext import qqueue
 
@@ -17,6 +19,19 @@ class Test_PullQ(AuthHandler):
         return '200 OK'
 
 class Test_Pull_Task_API(AuthHandler):
+    def get(self):
+        q = qqueue.QQueue('default')
+        tasks = q.lease_tasks()
+
+        return {
+            'message': 'success',
+            'data': [json.loads(x) for x in tasks]
+        }
+
     def post(self):
+        data = self.request.json
+        task = qqueue.Task(json.dumps(data), method='PULL')
+        q = qqueue.QQueue('default')
+        q.add(task)
 
-
+        return {'message': 'success'}
