@@ -5,8 +5,9 @@ import base64
 import mock
 import google.auth
 import google.api_core
-from google.cloud import pubsub_v1
 from google.api_core import retry
+from google.cloud.pubsub import types
+from google.cloud import pubsub_v1
 
 
 class QQUEUE_INVALID_PROJECT_ID(Exception):
@@ -15,6 +16,17 @@ class QQUEUE_INVALID_PROJECT_ID(Exception):
 class QQUEUE_AUTHENTICATION_ERROR(Exception):
     pass
 
+class QQUEUE_EMPTY_TASKS_ERROR(Exception):
+    pass
+
+class QQUEUE_TASK_TYPE_ERROR(Exception):
+    pass
+
+class QQUEUE_TASKS_MAX_LIMIT_ERROR(Exception):
+    pass
+
+QQUEUE_MAX_TASKS_LIMIT = 1000
+QQUEUE_MAX_BATCH_LIMIT = 500
 
 class Task(object):
     """
@@ -57,11 +69,19 @@ class Task(object):
             pickle.dumps(self, protocol=2, fix_imports=True)
         )
 
-    def from_pickle(self, data):
+    @classmethod
+    def from_pickle(cls, data):
         '''
         TODO: Add decryption algorithm for added security
         '''
         return pickle.loads(base64.b64decode(data), fix_imports=True)
+
+    @classmethod
+    def from_grpc_response(cls, grpc_response):
+        task = cls.from_pickle(grpc_response.message.data)
+        task.ack_id = grpc_response.ack_id
+
+        return task
 
     def __repr__(self):
         return f'{self.__class__.__name__} : {self.payload}, {self.method}'
@@ -87,11 +107,11 @@ class QQueue(object):
         if not self.project_id:
             raise QQUEUE_INVALID_PROJECT_ID
 
-        if kwargs.pop('initialize_queue'):
+        if kwargs.get('initialize_queue', False):
             # Create queue
             self.__create_queue()
             # Create enduser
-            if kwargs.pop('mode') == 'pull':
+            if kwargs.get('mode') == 'pull':
                 self.__create_enduser()
 
     def __get_credentials(self):
@@ -110,56 +130,83 @@ class QQueue(object):
         raise QQUEUE_AUTHENTICATION_ERROR
 
     def __get_subscriber(self):
-        return pubsub_v1.SubscriberClient(credentials=self.__get_credentials())
+        subscriber = pubsub_v1.SubscriberClient(credentials=self.__get_credentials())
+
+        return (
+            subscriber,
+            subscriber.subscription_path(self.project_id, self.queue_name)
+        )
 
     def __get_publisher(self):
-        return pubsub_v1.PublisherClient(credentials=self.__get_credentials())
+        publisher = pubsub_v1.PublisherClient(
+                credentials=self.__get_credentials(),
+                batch_settings=types.BatchSettings(max_messages=QQUEUE_MAX_BATCH_LIMIT)
+            )
+
+        return (
+            publisher,
+            publisher.topic_path(self.project_id, self.queue_name)
+        )
 
     def __create_queue(self):
         """ Creates a pubsub topic
         """
-        publisher = self.__get_publisher()
-        topic_path = publisher.topic_path(self.project_id, self.queue_name)
+        publisher, source = self.__get_publisher()
 
         # Check if topic exists
-        if publisher.get_topic(topic=topic_path):
-            logging.info(f'Queue {topic_path} exists. Skipping creation')
+        try:
+            publisher.get_topic(topic=source)
+            logging.info(f'Queue {source} exists. Skipping creation')
             return
+        except google.api_core.exceptions.NotFound:
+            pass
 
-        topic = publisher.create_topic(request={'name': topic_path})
+        topic = publisher.create_topic(request={'name': source})
 
         logging.info('Created queue: {topic.name}')
 
     def __create_enduser(self):
         """ Creates a pubsub subscriber for a given topic
         """
-        publisher = self.__get_publisher()
-        subscriber = self.__get_subscriber()
+        publisher, p_source = self.__get_publisher()
+        subscriber, s_source = self.__get_subscriber()
 
-        topic_path = publisher.topic_path(self.project_id, self.queue_name)
-        subscription_path = subscriber.subscription_path(self.project_id, self.queue_name)
-
-        if subscriber.get_subscription(subscription=subscription_path):
-            logging.info (f'End user for {subscription_path} exists')
+        try:
+            subscriber.get_subscription(subscription=s_source)
+            logging.info (f'End user for {s_source} exists')
             return
+        except google.api_core.exceptions.NotFound:
+            pass
 
         with subscriber:
             subscription = subscriber.create_subscription(
-                request={'name': subscription_path, 'topic': topic_path}
+                request={'name': s_source, 'topic': p_source}
             )
 
         logging.info(f'Queue default enduser: {subscription}')
+
+    def __sanitize_tasks(self, tasks):
+        if not tasks:
+            raise QQUEUE_EMPTY_TASKS_ERROR
+
+        if isinstance(tasks, list):
+            if len(tasks) > QQUEUE_MAX_TASKS_LIMIT:
+                raise QQUEUE_TASKS_MAX_LIMIT_ERROR
+
+            if type(tasks[0]) is not Task:
+                raise QQUEUE_TASK_TYPE_ERROR
+        elif type(tasks) is not Task:
+            raise QQUEUE_TASK_TYPE_ERROR
 
     def lease_tasks_by_tag(self, lease_seconds=600, max_tasks=100):
         pass
 
     def lease_tasks(self, lease_seconds=600, max_tasks=100):
-        subscriber = self.__get_subscriber()
-        subscription_path = subscriber.subscription_path(self.project_id, self.queue_name)
+        subscriber, source = self.__get_subscriber()
 
         with subscriber:
             response = subscriber.pull(
-                subscription=subscription_path,
+                subscription=source,
                 max_messages=max_tasks,
                 retry=retry.Retry(deadline=300)
             )
@@ -168,39 +215,68 @@ class QQueue(object):
 
             subscriber.modify_ack_deadline(
                 request={
-                    "subscription": subscription_path,
+                    "subscription": source,
                     "ack_ids": ack_ids,
                     # Must be between 10 and 600.
-                    "ack_deadline_seconds": 15
+                    "ack_deadline_seconds": lease_seconds
                 }
             )
 
-            # subscriber.acknowledge(subscription=subscription_path, ack_ids=ack_ids)
+        return list(map(
+            lambda x: Task.from_grpc_response(x), response.received_messages
+        ))
 
-            print(
-                f"Received and acknowledged {len(response.received_messages)} messages from {subscription_path}."
+    def add(self, tasks):
+        futures = self.add_async(tasks)
+
+        if isinstance(futures, list):
+            return [x.result() for x in futures]
+
+        return futures.result()
+
+    def add_async(self, tasks):
+        """Add task(s) to queue
+        ...
+        Parameter
+        ---------
+        tasks : Task or list of Task
+
+        Returns
+        -------
+        A future object of a list of future objects
+        which results to message id
+        """
+        self.__sanitize_tasks(tasks)
+
+        publisher, source = self.__get_publisher()
+
+        futures = []
+
+        if isinstance(tasks, list):
+            for tasks in tasks:
+                future = publisher.publish(
+                    source, tasks.to_pickle()
+                )
+                futures.append(future)
+
+        else:
+            futures = publisher.publish(
+                source, tasks.to_pickle()
             )
 
-        return response.received_messages
-
-    def add(self, data):
-        publisher = self.__get_publisher()
-        topic_path = publisher.topic_path(self.project_id, self.queue_name)
-
-        future = publisher.publish(
-            topic_path, data #, origin="python-sample", username="gcp"
-        )
-
-        print(future.result())
-
-    def add_async(self):
-        pass
+        return futures
 
     def modify_task_lease(self):
         pass
 
-    def delete_tasks(self):
-        pass
+    def delete_tasks(self, tasks):
+        self.__sanitize_tasks(tasks)
+        subscriber, source = self.__get_subscriber()
+
+        tasks = tasks if isinstance(tasks, list) else [tasks]
+        ack_ids = [task.ack_id for task in tasks]
+
+        subscriber.acknowledge(subscription=source, ack_ids=ack_ids)
 
     def delete_tasks_async(self):
         pass
@@ -211,26 +287,13 @@ class QQueue(object):
     def fetch_statistics(self, deadline=None):
         pass
 
-    # def seek(self):
-    #     subscriber = self.__get_subscriber()
-    #     subscription_path = subscriber.subscription_path(self.project_id, self.queue_name)
 
-    #     with subscriber:
-    #         subscriber.seek(
-    #                 subscription=subscription_path,
-    #                 max_messages=3,
-    #                 retry=retry.Retry(deadline=300)
-    #             )
 
-    # def add(self, data):
-    #     publisher = self.__get_publisher()
-    #     topic_path = publisher.topic_path(self.project_id, self.queue_name)
 
-    #     future = publisher.publish(
-    #         topic_path, data #, origin="python-sample", username="gcp"
-    #     )
 
-    #     print(future.result())
+
+
+
 
 
 if __name__ == "__main__":

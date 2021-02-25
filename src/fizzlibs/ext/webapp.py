@@ -29,7 +29,7 @@ class FlaskApplication(Flask):
         self._add_api_routes(routes)
         self._add_deferred_route()
 
-        # self.__load_queue()
+        self.__load_queue()
 
     def make_config(self, instance_relative=False):
         root_path = self.root_path
@@ -42,7 +42,12 @@ class FlaskApplication(Flask):
         from fizzlibs.ext import qqueue
         logging.info('Sync: loading queue configurations')
 
-        with open(os.path.join(self.root_path, 'queue.yaml')) as f:
+        queue_conf_yaml_path = os.path.join(self.root_path, 'queue.yaml')
+
+        if not os.path.isfile(queue_conf_yaml_path):
+            return
+
+        with open(queue_conf_yaml_path) as f:
             queues_conf = yaml.load(f)
 
         queues = queues_conf.get('queue')

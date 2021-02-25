@@ -23,15 +23,18 @@ class Test_Pull_Task_API(AuthHandler):
         q = qqueue.QQueue('default')
         tasks = q.lease_tasks()
 
+        q.delete_tasks(tasks)
+
         return {
             'message': 'success',
-            'data': [json.loads(x) for x in tasks]
+            'data': [json.loads(x.payload) for x in tasks]
         }
 
     def post(self):
         data = self.request.json
-        task = qqueue.Task(json.dumps(data), method='PULL')
-        q = qqueue.QQueue('default')
-        q.add(task)
+        task = qqueue.Task(payload=json.dumps(data), method='PULL')
 
-        return {'message': 'success'}
+        q = qqueue.QQueue('default')
+        ack_id = q.add(task)
+
+        return {'message': 'success', 'ack_id': ack_id}

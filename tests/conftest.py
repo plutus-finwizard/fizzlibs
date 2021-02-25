@@ -5,7 +5,7 @@ import pytest
 
 from app import create_app
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def app():
 
     app = create_app({
@@ -15,11 +15,11 @@ def app():
     yield app
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def client(app):
     return app.test_client()
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def runner(app):
     return app.test_cli_runner()

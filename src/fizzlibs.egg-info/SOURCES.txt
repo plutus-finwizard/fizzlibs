@@ -1,8 +1,0 @@
-MANIFEST.in
-setup.py
-fizzlibs.egg-info/PKG-INFO
-fizzlibs.egg-info/SOURCES.txt
-fizzlibs.egg-info/dependency_links.txt
-fizzlibs.egg-info/not-zip-safe
-fizzlibs.egg-info/requires.txt
-fizzlibs.egg-info/top_level.txt
