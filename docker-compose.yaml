@@ -1,0 +1,20 @@
+version: "3"
+
+services:
+  pubsub:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:328.0.0
+    command: >
+      gcloud beta emulators pubsub start
+      --project=pubsub-emulator
+      --host-port=0.0.0.0:8080 
+
+  fizzlibs:
+    build: .
+    ports:
+      - 9080:8080
+    volumes:
+      - ./:/app
+    environment:
+      PUBSUB_EMULATOR_HOST: pubsub:8080
+      QQUEUE_PROJECT_ID: pubsub-emulator
+    command: python -m http.server

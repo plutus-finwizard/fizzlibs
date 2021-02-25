@@ -1,0 +1,5 @@
+pytest
+# google-cloud-storage
+# pika
+# bson
+# grequests
