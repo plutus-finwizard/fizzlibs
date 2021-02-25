@@ -208,8 +208,12 @@ class QQueue(object):
             response = subscriber.pull(
                 subscription=source,
                 max_messages=max_tasks,
+                return_immediately=True,
                 retry=retry.Retry(deadline=300)
             )
+
+            if not response.received_messages:
+                return []
 
             ack_ids = [received_message.ack_id for received_message in response.received_messages]
 
@@ -330,26 +334,26 @@ if __name__ == "__main__":
     #     # Ignoring existing subscription here, testing purpose
     #     pass
 
-    # # Pull messages
-    # cQueue = QQueue('imqueue')
-    # print (cQueue.lease_tasks())
+    # Pull messages
+    cQueue = QQueue('default')
+    print (cQueue.lease_tasks())
 
-    def print_time( threadName, delay):
-        print (f'{threadName} -------------------------------')
-        # count = 0
-        # while count < 5:
-        #     time.sleep(delay)
-        #     count += 1
-        #     print(f"{threadName}: {time.ctime(time.time())}")
-        cQueue = QQueue('imqueue')
-        print (cQueue.lease_tasks())
+    # def print_time( threadName, delay):
+    #     print (f'{threadName} -------------------------------')
+    #     # count = 0
+    #     # while count < 5:
+    #     #     time.sleep(delay)
+    #     #     count += 1
+    #     #     print(f"{threadName}: {time.ctime(time.time())}")
+    #     cQueue = QQueue('imqueue')
+    #     print (cQueue.lease_tasks())
 
-    # Create two threads as follows
-    try:
-        _thread.start_new_thread( print_time, ("Thread-1", 2) )
-        _thread.start_new_thread( print_time, ("Thread-2", 2) )
-    except Exception as e:
-        print(str(e))
+    # # Create two threads as follows
+    # try:
+    #     _thread.start_new_thread( print_time, ("Thread-1", 2) )
+    #     _thread.start_new_thread( print_time, ("Thread-2", 2) )
+    # except Exception as e:
+    #     print(str(e))
 
-    while 1:
-        pass
+    # while 1:
+    #     pass

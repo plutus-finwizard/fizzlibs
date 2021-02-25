@@ -2,3 +2,6 @@
 queue:
  - name: default
    mode: pull
+
+ - name: default-2
+   mode: pull
