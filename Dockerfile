@@ -7,6 +7,7 @@ ENV FLASK_ENV=$env
 COPY ./ /app
 WORKDIR /app
 
+RUN apt-get update && apt-get install git -y
 RUN pip install -r ./tests/requirements.txt;
 
 EXPOSE 8080

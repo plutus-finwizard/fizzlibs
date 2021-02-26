@@ -270,8 +270,20 @@ class QQueue(object):
 
         return futures
 
-    def modify_task_lease(self):
-        pass
+    def modify_task_lease(self, tasks, lease_seconds=600):
+        self.__sanitize_tasks(tasks)
+        tasks = tasks if isinstance(tasks, list) else [tasks]
+        ack_ids = [task.ack_id for task in tasks]
+
+        subscriber, source = self.__get_subscriber()
+        subscriber.modify_ack_deadline(
+            request={
+                "subscription": source,
+                "ack_ids": ack_ids,
+                # Must be between 10 and 600.
+                "ack_deadline_seconds": lease_seconds
+            }
+        )
 
     def delete_tasks(self, tasks):
         self.__sanitize_tasks(tasks)

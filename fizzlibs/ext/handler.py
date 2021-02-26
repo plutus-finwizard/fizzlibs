@@ -27,8 +27,8 @@ class RequestObject(object):
     def json(self):
         return request.get_json()
 
-    def get(self, name):
-        return request.values.get(name)
+    def get(self, name, default=None):
+        return request.values.get(name, default=default)
 
 
 class AuthHandler(MethodView):

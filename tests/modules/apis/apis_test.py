@@ -45,12 +45,15 @@ class Test_Pull_Multiple_Task_API(AuthHandler):
         q = qqueue.QQueue('default')
         tasks = q.lease_tasks()
 
-        if tasks:
+        delete = self.request.get('delete', 'True')
+
+        if delete == 'True' and tasks:
             q.delete_tasks(tasks)
 
         return {
             'message': 'success',
-            'data': [json.loads(x.payload) for x in tasks]
+            'data': [json.loads(x.payload) for x in tasks],
+            'tasks': [x.to_pickle() for x in tasks]
         }
 
     def post(self):
@@ -61,3 +64,15 @@ class Test_Pull_Multiple_Task_API(AuthHandler):
         ack_ids = q.add(tasks)
 
         return {'message': 'success', 'ack_ids': ack_ids}
+
+    def put(self):
+        data = self.request.json
+        logging.info (data)
+        tasks = [qqueue.Task.from_pickle(x) for x in data]
+
+        logging.error(tasks)
+
+        q = qqueue.QQueue('default')
+        q.modify_task_lease(tasks, lease_seconds=0)
+
+        return {'message': 'success'}
