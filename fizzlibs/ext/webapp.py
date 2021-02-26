@@ -13,7 +13,7 @@ class FlaskConfig(Config):
         self['ENVIRONMENT'] = env.lower()
 
         with open(os.path.join(self.root_path, config_file)) as f:
-            c = yaml.load(f)
+            c = yaml.load(f, Loader=yaml.SafeLoader)
 
         c = c.get(env, c)
 
@@ -48,7 +48,7 @@ class FlaskApplication(Flask):
             return
 
         with open(queue_conf_yaml_path) as f:
-            queues_conf = yaml.load(f)
+            queues_conf = yaml.load(f, Loader=yaml.SafeLoader)
 
         queues = queues_conf.get('queue')
 

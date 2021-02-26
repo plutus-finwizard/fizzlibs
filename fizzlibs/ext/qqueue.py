@@ -350,6 +350,22 @@ if __name__ == "__main__":
     cQueue = QQueue('default')
     print (cQueue.lease_tasks())
 
+    # bQueue = QQueue('default')
+    # bQueue.add(Task('Task a'))
+    # bQueue.add(Task('Task b'))
+    # bQueue.add(Task('Task c'))
+    # bQueue.add(Task('Task d'))
+
+    cQueue = QQueue('default')
+    print (cQueue.lease_tasks())
+
+    cQueue = QQueue('default')
+    print (cQueue.lease_tasks())
+
+    cQueue = QQueue('default')
+    print (cQueue.lease_tasks())
+
+
     # def print_time( threadName, delay):
     #     print (f'{threadName} -------------------------------')
     #     # count = 0

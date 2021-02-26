@@ -53,7 +53,7 @@ class Test_Pull_Multiple_Task_API(AuthHandler):
         return {
             'message': 'success',
             'data': [json.loads(x.payload) for x in tasks],
-            'tasks': [x.to_pickle() for x in tasks]
+            'tasks': [x.to_pickle().decode('utf-8') for x in tasks]
         }
 
     def post(self):
@@ -68,7 +68,7 @@ class Test_Pull_Multiple_Task_API(AuthHandler):
     def put(self):
         data = self.request.json
         logging.info (data)
-        tasks = [qqueue.Task.from_pickle(x) for x in data]
+        tasks = [qqueue.Task.from_pickle(x.encode('utf-8')) for x in data]
 
         logging.error(tasks)
 

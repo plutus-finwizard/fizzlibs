@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='fizzlibs',
-    version='1.0.2',
+    version='1.0.3',
     packages=setuptools.find_packages(),
     include_package_data=True,
     zip_safe=False,

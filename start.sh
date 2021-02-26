@@ -3,5 +3,5 @@
 # turn on bash's job control
 set -m
 
-pip install -e src
+pip install -e .
 pytest tests -s

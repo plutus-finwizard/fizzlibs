@@ -1,4 +1,5 @@
 pytest
+# git+https://github.com/plutus-finwizard/fizzlibs.git
 # google-cloud-storage
 # pika
 # bson
