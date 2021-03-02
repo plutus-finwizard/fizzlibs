@@ -105,7 +105,7 @@ class QQueue(object):
         self.project_id = os.environ.get('QQUEUE_PROJECT_ID')
 
         if os.environ.get('GKE_SOFTWARE_ID'):
-            self.queue_name = f'{os.environ.get("GKE_SOFTWARE_ID")}-{self.name}'
+            self.queue_name = f'{os.environ.get("GKE_SOFTWARE_ID")}-{name}'
         else:
             self.queue_name = name
 
@@ -187,7 +187,7 @@ class QQueue(object):
             'topic': p_source
         }
 
-        if kwargs.get('mode') == 'push':
+        if kwargs.get('mode', 'push') == 'push':
             path = kwargs.get('path', '/_ah/queue/deferred')
             endpoint = f'{os.environ.get("HTTP_HOST")}{path}'
             endpoint = kwargs.get('endpoint', endpoint)

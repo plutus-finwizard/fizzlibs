@@ -17,6 +17,7 @@ services:
     volumes:
       - ./:/app
     environment:
+      GKE_SOFTWARE_ID: 'fizzlibs-local'
       PUBSUB_EMULATOR_HOST: pubsub:8080
       QQUEUE_PROJECT_ID: pubsub-emulator
       HTTP_HOST: http://fizzlibs:8085
