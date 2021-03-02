@@ -37,10 +37,12 @@ class Task(object):
     Attributes
     ----------
     """
-    def __init__(self, payload, method='PUSH', tag=None, countdown=None):
+    def __init__(self, *args, payload=None, handler=None, **kwargs):
         """
         Parameters
         ----------
+        *args : arguments
+            Positional arguments for push tasks
         payload : str
             Message of the task
         method : str
@@ -57,9 +59,12 @@ class Task(object):
         """
 
         self.payload = payload
-        self.method = method or 'PUSH'
-        self.tag = tag if self.method == 'PULL' else None
-        self.countdown = countdown
+        self.method = kwargs.pop('method', 'push')
+        self.tag = kwargs.pop('tag', None)
+
+        self.handler = handler
+        self.args = args
+        self.kwargs = kwargs
 
     def to_pickle(self):
         '''
@@ -111,8 +116,7 @@ class QQueue(object):
             # Create queue
             self.__create_queue()
             # Create enduser
-            if kwargs.get('mode') == 'pull':
-                self.__create_enduser()
+            self.__create_enduser(**kwargs)
 
     def __get_credentials(self):
         if os.environ.get('PUBSUB_EMULATOR_HOST'):
@@ -165,7 +169,7 @@ class QQueue(object):
 
         logging.info('Created queue: {topic.name}')
 
-    def __create_enduser(self):
+    def __create_enduser(self, **kwargs):
         """ Creates a pubsub subscriber for a given topic
         """
         publisher, p_source = self.__get_publisher()
@@ -178,9 +182,22 @@ class QQueue(object):
         except google.api_core.exceptions.NotFound:
             pass
 
+        request={
+            'name': s_source,
+            'topic': p_source
+        }
+
+        if kwargs.get('mode') == 'push':
+            path = kwargs.get('path', '/_ah/queue/deferred')
+            endpoint = f'{os.environ.get("HTTP_HOST")}{path}'
+            endpoint = kwargs.get('endpoint', endpoint)
+
+            push_config = pubsub_v1.types.PushConfig(push_endpoint=endpoint)
+            request['push_config'] = push_config
+
         with subscriber:
             subscription = subscriber.create_subscription(
-                request={'name': s_source, 'topic': p_source}
+                request=request
             )
 
         logging.info(f'Queue default enduser: {subscription}')

@@ -4,4 +4,7 @@
 set -m
 
 pip install -e .
-pytest tests -s
+# pytest tests -s
+
+# Run flask app
+flask run --host=0.0.0.0

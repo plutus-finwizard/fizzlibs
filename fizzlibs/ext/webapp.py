@@ -4,7 +4,6 @@ import logging
 
 from flask import Flask
 from flask import Config
-# from flask import request
 
 
 class FlaskConfig(Config):

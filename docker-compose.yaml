@@ -6,15 +6,23 @@ services:
     command: >
       gcloud beta emulators pubsub start
       --project=pubsub-emulator
-      --host-port=0.0.0.0:8080 
+      --host-port=0.0.0.0:8080
+    networks:
+      - fizz-net
 
   fizzlibs:
     build: .
     ports:
-      - 9080:8080
+      - 8085:8085
     volumes:
       - ./:/app
     environment:
       PUBSUB_EMULATOR_HOST: pubsub:8080
       QQUEUE_PROJECT_ID: pubsub-emulator
-    command: python -m http.server
+      HTTP_HOST: http://fizzlibs:8085
+    networks:
+      - fizz-net
+
+networks:
+  fizz-net:
+    driver: bridge

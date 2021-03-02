@@ -3,6 +3,7 @@ import json
 
 from fizzlibs.ext.handler import AuthHandler
 from fizzlibs.ext import qqueue
+from fizzlibs.ext import deferred
 
 class Test_API(AuthHandler):
     def get(self):
@@ -76,3 +77,11 @@ class Test_Pull_Multiple_Task_API(AuthHandler):
         q.modify_task_lease(tasks, lease_seconds=0)
 
         return {'message': 'success'}
+
+def call_deferred_func(title, name):
+    logging.info (f'{title}, {name}')
+
+class Test_Push_Q_API(AuthHandler):
+    def get(self):
+        b64 = deferred.defer(call_deferred_func, '19', 'covid')
+        return b64

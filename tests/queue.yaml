@@ -1,3 +1,9 @@
 queue:
   - name: default
+    mode: push
+
+  - name: default-2
+    mode: push
+
+  - name: data-pull
     mode: pull
