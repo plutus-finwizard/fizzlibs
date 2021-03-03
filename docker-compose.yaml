@@ -7,6 +7,8 @@ services:
       gcloud beta emulators pubsub start
       --project=pubsub-emulator
       --host-port=0.0.0.0:8080
+    ports:
+      - 8080
     networks:
       - fizz-net
 
@@ -20,7 +22,7 @@ services:
   fizzlibs:
     build: .
     ports:
-      - 8085:8085
+      - 8085
     volumes:
       - ./:/app
     environment:
