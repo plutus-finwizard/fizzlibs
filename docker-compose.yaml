@@ -20,7 +20,8 @@ services:
       GKE_SOFTWARE_ID: 'fizzlibs-local'
       PUBSUB_EMULATOR_HOST: pubsub:8080
       QQUEUE_PROJECT_ID: pubsub-emulator
-      HTTP_HOST: http://fizzlibs:8085
+      HTTP_SCHEME: http
+      DOMAIN: fizzlibs:8085
     networks:
       - fizz-net
 

@@ -188,8 +188,9 @@ class QQueue(object):
         }
 
         if kwargs.get('mode', 'push') == 'push':
+            host = f'{os.environ.get("HTTP_SCHEME")}://{os.environ.get("HTTP_HOST")}'
             path = kwargs.get('path', '/_ah/queue/deferred')
-            endpoint = f'{os.environ.get("HTTP_HOST")}{path}'
+            endpoint = f'{host}{path}'
             endpoint = kwargs.get('endpoint', endpoint)
 
             push_config = pubsub_v1.types.PushConfig(push_endpoint=endpoint)
