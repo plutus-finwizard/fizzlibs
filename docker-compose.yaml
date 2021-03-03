@@ -10,6 +10,13 @@ services:
     networks:
       - fizz-net
 
+  redis:
+    image: redis:6.2.1
+    environment:
+      MASTER: "true"
+    networks:
+      - fizz-net
+
   fizzlibs:
     build: .
     ports:
@@ -22,6 +29,8 @@ services:
       QQUEUE_PROJECT_ID: pubsub-emulator
       HTTP_SCHEME: http
       HTTP_HOST: fizzlibs:8085
+      REDIS_SERVICE_HOST: redis
+      REDIS_SERVICE_PORT: 6379
     networks:
       - fizz-net
 

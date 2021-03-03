@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='fizzlibs',
-    version='1.0.7',
+    version='1.0.8',
     packages=setuptools.find_packages(),
     include_package_data=True,
     zip_safe=False,
@@ -14,6 +14,7 @@ setuptools.setup(
         'pika==1.2.0',
         'google-cloud-pubsub==2.2.0',
         'google-auth==1.27.0',
-        'mock==4.0.3'
+        'mock==4.0.3',
+        'redis==3.5.3'
     ],
 )
