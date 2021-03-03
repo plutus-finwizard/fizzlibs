@@ -21,7 +21,7 @@ services:
       PUBSUB_EMULATOR_HOST: pubsub:8080
       QQUEUE_PROJECT_ID: pubsub-emulator
       HTTP_SCHEME: http
-      DOMAIN: fizzlibs:8085
+      HTTP_HOST: fizzlibs:8085
     networks:
       - fizz-net
 
