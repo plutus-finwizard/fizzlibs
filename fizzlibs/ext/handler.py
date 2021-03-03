@@ -37,3 +37,7 @@ class AuthHandler(MethodView):
 
         self.request = RequestObject()
         self.response = make_response()
+
+class PlutusBlobHandler(AuthHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
